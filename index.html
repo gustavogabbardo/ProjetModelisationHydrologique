@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Gustavo GABBARDO">
+
+<title>Projet de modélisation hydrologique des bassins versants</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="Projet_Modelisation_Hydrologique_HHGE_files/libs/clipboard/clipboard.min.js"></script>
+<script src="Projet_Modelisation_Hydrologique_HHGE_files/libs/quarto-html/quarto.js"></script>
+<script src="Projet_Modelisation_Hydrologique_HHGE_files/libs/quarto-html/popper.min.js"></script>
+<script src="Projet_Modelisation_Hydrologique_HHGE_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="Projet_Modelisation_Hydrologique_HHGE_files/libs/quarto-html/anchor.min.js"></script>
+<link href="Projet_Modelisation_Hydrologique_HHGE_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="Projet_Modelisation_Hydrologique_HHGE_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="Projet_Modelisation_Hydrologique_HHGE_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="Projet_Modelisation_Hydrologique_HHGE_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="Projet_Modelisation_Hydrologique_HHGE_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Projet de modélisation hydrologique des bassins versants</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Gustavo GABBARDO </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p>Faculté des Sciences et Ingénierie - Sorbonne Université<br>
+Master 2 - Hydrologie-Hydrogéologie-Géochimie Environnementale</p>
+<hr>
+<section id="chargement-des-packages" class="level3">
+<h3 class="anchored" data-anchor-id="chargement-des-packages">Chargement des packages</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(airGRteaching)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(zoo)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="définition-des-chemins" class="level3">
+<h3 class="anchored" data-anchor-id="définition-des-chemins">Définition des chemins</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>path_donnees <span class="ot">&lt;-</span> <span class="st">"Donnees_2023"</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>fichiers_debit <span class="ot">&lt;-</span>  <span class="fu">list.files</span>(</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">path =</span> path_donnees,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">pattern =</span> <span class="st">"Debit.*</span><span class="sc">\\</span><span class="st">.csv"</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">full.names =</span> <span class="cn">TRUE</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>fichiers_meteo <span class="ot">&lt;-</span>  <span class="fu">list.files</span>(</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">path =</span> path_donnees,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">pattern =</span> <span class="st">"Meteo.*</span><span class="sc">\\</span><span class="st">.csv"</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">full.names =</span> <span class="cn">TRUE</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="lecture-des-données" class="level3">
+<h3 class="anchored" data-anchor-id="lecture-des-données">Lecture des données</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Débit</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>list_chroniques_debit <span class="ot">&lt;-</span> </span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  purrr<span class="sc">::</span><span class="fu">map</span>(fichiers_debit, </span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>             \(x) readr<span class="sc">::</span><span class="fu">read_delim</span>(x, </span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">delim =</span> <span class="st">";"</span>, </span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">skip =</span> <span class="dv">1</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">col_names =</span> <span class="fu">c</span>(<span class="st">"Date"</span>, <span class="st">"Q_ls"</span>, <span class="st">"Q_mmj"</span>),</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">col_types =</span> <span class="fu">cols</span>(<span class="at">Date =</span> readr<span class="sc">::</span><span class="fu">col_datetime</span>(<span class="at">format =</span> <span class="st">"%d/%m/%Y"</span>),</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>                                                     <span class="at">Q_ls =</span> readr<span class="sc">::</span><span class="fu">col_double</span>(),</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>                                                     <span class="at">Q_mmj =</span> readr<span class="sc">::</span><span class="fu">col_double</span>())))</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>names_list_chroniques_debit <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"M01"</span>, <span class="st">"M03"</span>, <span class="st">"M04"</span>, <span class="st">"M06"</span>, <span class="st">"M08"</span>, <span class="st">"M09"</span>)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>list_chroniques_debit <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">set_names</span>(list_chroniques_debit, names_list_chroniques_debit)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Précipitation et évapotranspiration potentielle</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>list_chroniques_meteo <span class="ot">&lt;-</span> </span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>  purrr<span class="sc">::</span><span class="fu">map</span>(fichiers_meteo, </span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>             \(x) readr<span class="sc">::</span><span class="fu">read_delim</span>(x, </span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">delim =</span> <span class="st">";"</span>, </span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">skip =</span> <span class="dv">1</span>,</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">col_names =</span> <span class="fu">c</span>(<span class="st">"Date"</span>, <span class="st">"P_mm"</span>, <span class="st">"ETP_mmj"</span>),</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">col_types =</span> <span class="fu">cols</span>(<span class="at">Date =</span> readr<span class="sc">::</span><span class="fu">col_datetime</span>(<span class="at">format =</span> <span class="st">"%d/%m/%Y"</span>),</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>                                                     <span class="at">P_mm =</span> readr<span class="sc">::</span><span class="fu">col_double</span>(),</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>                                                     <span class="at">ETP_mmj =</span> readr<span class="sc">::</span><span class="fu">col_double</span>())))</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>names_list_chroniques_meteo <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"M01"</span>, <span class="st">"M02"</span>, <span class="st">"M03"</span>, <span class="st">"M04"</span>, <span class="st">"M05"</span>, <span class="st">"M06"</span>, <span class="st">"M07"</span>, <span class="st">"M08"</span>, <span class="st">"M09"</span>)</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>list_chroniques_meteo <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">set_names</span>(list_chroniques_meteo, names_list_chroniques_meteo)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="synthèse-des-données" class="level2">
+<h2 class="anchored" data-anchor-id="synthèse-des-données">Synthèse des données</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>purrr<span class="sc">::</span><span class="fu">map</span>(list_chroniques_debit, summary)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$M01
+      Date                          Q_ls            Q_mmj        
+ Min.   :1995-01-01 00:00:00   Min.   :    32   Min.   : 0.0080  
+ 1st Qu.:2001-04-01 12:00:00   1st Qu.:   536   1st Qu.: 0.1270  
+ Median :2007-07-02 00:00:00   Median :  1590   Median : 0.3770  
+ Mean   :2007-07-02 00:00:00   Mean   :  4170   Mean   : 0.9894  
+ 3rd Qu.:2013-09-30 12:00:00   3rd Qu.:  4270   3rd Qu.: 1.0130  
+ Max.   :2019-12-31 00:00:00   Max.   :121000   Max.   :28.7080  
+
+$M03
+      Date                          Q_ls            Q_mmj       
+ Min.   :1995-01-01 00:00:00   Min.   :    11   Min.   : 0.001  
+ 1st Qu.:2001-04-01 12:00:00   1st Qu.:  1090   1st Qu.: 0.108  
+ Median :2007-07-02 00:00:00   Median :  3720   Median : 0.368  
+ Mean   :2007-07-02 00:00:00   Mean   :  9206   Mean   : 0.912  
+ 3rd Qu.:2013-09-30 12:00:00   3rd Qu.: 10100   3rd Qu.: 1.000  
+ Max.   :2019-12-31 00:00:00   Max.   :217000   Max.   :21.495  
+
+$M04
+      Date                          Q_ls           Q_mmj        
+ Min.   :1995-01-01 00:00:00   Min.   :   32   Min.   : 0.0080  
+ 1st Qu.:2001-04-01 12:00:00   1st Qu.:  763   1st Qu.: 0.1800  
+ Median :2007-07-02 00:00:00   Median : 1250   Median : 0.2960  
+ Mean   :2007-07-02 00:00:00   Mean   : 3108   Mean   : 0.7348  
+ 3rd Qu.:2013-09-30 12:00:00   3rd Qu.: 2890   3rd Qu.: 0.6830  
+ Max.   :2019-12-31 00:00:00   Max.   :94600   Max.   :22.3640  
+
+$M06
+      Date                          Q_ls           Q_mmj       
+ Min.   :1995-01-01 00:00:00   Min.   :    0   Min.   : 0.000  
+ 1st Qu.:2001-04-01 12:00:00   1st Qu.:   78   1st Qu.: 0.051  
+ Median :2007-07-02 00:00:00   Median :  398   Median : 0.260  
+ Mean   :2007-07-02 00:00:00   Mean   : 1294   Mean   : 0.846  
+ 3rd Qu.:2013-09-30 12:00:00   3rd Qu.: 1270   3rd Qu.: 0.830  
+ Max.   :2019-12-31 00:00:00   Max.   :47100   Max.   :30.789  
+
+$M08
+      Date                          Q_ls            Q_mmj        
+ Min.   :1995-01-01 00:00:00   Min.   :    18   Min.   : 0.0030  
+ 1st Qu.:2001-04-01 12:00:00   1st Qu.:   319   1st Qu.: 0.0460  
+ Median :2007-07-02 00:00:00   Median :  1310   Median : 0.1900  
+ Mean   :2007-07-02 00:00:00   Mean   :  5200   Mean   : 0.7556  
+ 3rd Qu.:2013-09-30 12:00:00   3rd Qu.:  4430   3rd Qu.: 0.6440  
+ Max.   :2019-12-31 00:00:00   Max.   :155000   Max.   :22.5230  
+
+$M09
+      Date                          Q_ls            Q_mmj        
+ Min.   :1995-01-01 00:00:00   Min.   :   151   Min.   : 0.0060  
+ 1st Qu.:2001-04-01 12:00:00   1st Qu.:  2700   1st Qu.: 0.0990  
+ Median :2007-07-02 00:00:00   Median :  8560   Median : 0.3140  
+ Mean   :2007-07-02 00:00:00   Mean   : 22852   Mean   : 0.8388  
+ 3rd Qu.:2013-09-30 12:00:00   3rd Qu.: 23100   3rd Qu.: 0.8480  
+ Max.   :2019-12-31 00:00:00   Max.   :604000   Max.   :22.1710  
+                               NA's   :9        NA's   :9        </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>purrr<span class="sc">::</span><span class="fu">map</span>(list_chroniques_meteo, summary)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$M01
+      Date                          P_mm           ETP_mmj     
+ Min.   :1990-01-01 00:00:00   Min.   : 0.000   Min.   :0.000  
+ 1st Qu.:1997-10-01 12:00:00   1st Qu.: 0.000   1st Qu.:0.700  
+ Median :2005-07-02 00:00:00   Median : 0.200   Median :1.700  
+ Mean   :2005-07-02 00:00:00   Mean   : 2.592   Mean   :2.005  
+ 3rd Qu.:2013-04-01 12:00:00   3rd Qu.: 2.600   3rd Qu.:3.300  
+ Max.   :2020-12-31 00:00:00   Max.   :71.100   Max.   :6.000  
+
+$M02
+      Date                          P_mm           ETP_mmj     
+ Min.   :1990-01-01 00:00:00   Min.   : 0.000   Min.   :0.000  
+ 1st Qu.:1997-10-01 12:00:00   1st Qu.: 0.000   1st Qu.:0.700  
+ Median :2005-07-02 00:00:00   Median : 0.100   Median :1.700  
+ Mean   :2005-07-02 00:00:00   Mean   : 2.192   Mean   :2.006  
+ 3rd Qu.:2013-04-01 12:00:00   3rd Qu.: 2.100   3rd Qu.:3.300  
+ Max.   :2020-12-31 00:00:00   Max.   :51.000   Max.   :6.100  
+
+$M03
+      Date                          P_mm          ETP_mmj     
+ Min.   :1990-01-01 00:00:00   Min.   : 0.00   Min.   :0.000  
+ 1st Qu.:1997-10-01 12:00:00   1st Qu.: 0.00   1st Qu.:0.700  
+ Median :2005-07-02 00:00:00   Median : 0.20   Median :1.700  
+ Mean   :2005-07-02 00:00:00   Mean   : 2.48   Mean   :2.011  
+ 3rd Qu.:2013-04-01 12:00:00   3rd Qu.: 2.60   3rd Qu.:3.300  
+ Max.   :2020-12-31 00:00:00   Max.   :62.30   Max.   :6.100  
+
+$M04
+      Date                          P_mm           ETP_mmj    
+ Min.   :1990-01-01 00:00:00   Min.   : 0.000   Min.   :0.00  
+ 1st Qu.:1997-10-01 12:00:00   1st Qu.: 0.000   1st Qu.:0.70  
+ Median :2005-07-02 00:00:00   Median : 0.200   Median :1.80  
+ Mean   :2005-07-02 00:00:00   Mean   : 2.102   Mean   :2.03  
+ 3rd Qu.:2013-04-01 12:00:00   3rd Qu.: 2.200   3rd Qu.:3.30  
+ Max.   :2020-12-31 00:00:00   Max.   :46.900   Max.   :6.10  
+
+$M05
+      Date                          P_mm           ETP_mmj     
+ Min.   :1990-01-01 00:00:00   Min.   : 0.000   Min.   :0.000  
+ 1st Qu.:1997-10-01 12:00:00   1st Qu.: 0.000   1st Qu.:0.700  
+ Median :2005-07-02 00:00:00   Median : 0.200   Median :1.800  
+ Mean   :2005-07-02 00:00:00   Mean   : 2.104   Mean   :2.037  
+ 3rd Qu.:2013-04-01 12:00:00   3rd Qu.: 2.200   3rd Qu.:3.300  
+ Max.   :2020-12-31 00:00:00   Max.   :48.800   Max.   :6.100  
+
+$M06
+      Date                          P_mm           ETP_mmj    
+ Min.   :1990-01-01 00:00:00   Min.   : 0.000   Min.   :0.00  
+ 1st Qu.:1997-10-01 12:00:00   1st Qu.: 0.000   1st Qu.:0.70  
+ Median :2005-07-02 00:00:00   Median : 0.200   Median :1.80  
+ Mean   :2005-07-02 00:00:00   Mean   : 2.458   Mean   :2.02  
+ 3rd Qu.:2013-04-01 12:00:00   3rd Qu.: 2.600   3rd Qu.:3.30  
+ Max.   :2020-12-31 00:00:00   Max.   :53.700   Max.   :6.20  
+
+$M07
+      Date                          P_mm           ETP_mmj     
+ Min.   :1990-01-01 00:00:00   Min.   : 0.000   Min.   :0.000  
+ 1st Qu.:1997-10-01 12:00:00   1st Qu.: 0.000   1st Qu.:0.700  
+ Median :2005-07-02 00:00:00   Median : 0.100   Median :1.800  
+ Mean   :2005-07-02 00:00:00   Mean   : 2.395   Mean   :2.034  
+ 3rd Qu.:2013-04-01 12:00:00   3rd Qu.: 2.500   3rd Qu.:3.300  
+ Max.   :2020-12-31 00:00:00   Max.   :51.300   Max.   :6.300  
+
+$M08
+      Date                          P_mm          ETP_mmj     
+ Min.   :1990-01-01 00:00:00   Min.   : 0.00   Min.   :0.000  
+ 1st Qu.:1997-10-01 12:00:00   1st Qu.: 0.00   1st Qu.:0.700  
+ Median :2005-07-02 00:00:00   Median : 0.20   Median :1.800  
+ Mean   :2005-07-02 00:00:00   Mean   : 2.39   Mean   :2.034  
+ 3rd Qu.:2013-04-01 12:00:00   3rd Qu.: 2.50   3rd Qu.:3.300  
+ Max.   :2020-12-31 00:00:00   Max.   :50.40   Max.   :6.300  
+
+$M09
+      Date                          P_mm           ETP_mmj     
+ Min.   :1990-01-01 00:00:00   Min.   : 0.000   Min.   :0.000  
+ 1st Qu.:1997-10-01 12:00:00   1st Qu.: 0.000   1st Qu.:0.700  
+ Median :2005-07-02 00:00:00   Median : 0.200   Median :1.800  
+ Mean   :2005-07-02 00:00:00   Mean   : 2.338   Mean   :2.027  
+ 3rd Qu.:2013-04-01 12:00:00   3rd Qu.: 2.600   3rd Qu.:3.300  
+ Max.   :2020-12-31 00:00:00   Max.   :48.700   Max.   :6.200  </code></pre>
+</div>
+</div>
+<section id="traitement-des-données" class="level3">
+<h3 class="anchored" data-anchor-id="traitement-des-données">Traitement des données</h3>
+<p>9 données de débits manquantes identifiées sur la chronique du bassin M09<br>
+Remplacer les valeurs manquantes à partir d’une interpolation linéaire</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a> list_chroniques_debit<span class="sc">$</span>M09 <span class="ot">&lt;-</span> list_chroniques_debit<span class="sc">$</span>M09 <span class="sc">%&gt;%</span> </span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">Q_ls =</span> zoo<span class="sc">::</span><span class="fu">na.approx</span>(Q_ls, Date, <span class="at">na.rm =</span> <span class="cn">FALSE</span>),</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">Q_mmj =</span> zoo<span class="sc">::</span><span class="fu">na.approx</span>(Q_mmj, Date, <span class="at">na.rm =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="régime-hydrologique-des-débits" class="level3">
+<h3 class="anchored" data-anchor-id="régime-hydrologique-des-débits">Régime hydrologique des débits</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>list_results_regime_debit <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (BV <span class="cf">in</span> names_list_chroniques_debit) {</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  df <span class="ot">&lt;-</span> list_chroniques_debit[[BV]]</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  df_name <span class="ot">&lt;-</span> BV</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  df <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span> </span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">mutate</span>(</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">Year =</span> lubridate<span class="sc">::</span><span class="fu">year</span>(Date),</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">Month =</span> lubridate<span class="sc">::</span><span class="fu">month</span>(Date, <span class="at">label =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">%&gt;%</span> </span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">group_by</span>(Year, Month) <span class="sc">%&gt;%</span> </span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">summarise</span>(</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">Q_moy_mo_m3s =</span> <span class="fu">mean</span>(Q_ls) <span class="sc">/</span> <span class="dv">1000</span>,</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">%&gt;%</span> </span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">ungroup</span>()</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>  df_Qmoy <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span> </span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">group_by</span>(Month) <span class="sc">%&gt;%</span> </span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">summarise</span>(</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>      <span class="at">Q_moy_mo_m3s =</span> <span class="fu">mean</span>(Q_moy_mo_m3s)</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>  list_results_regime_debit[[BV]] <span class="ot">&lt;-</span> df_Qmoy</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>  plot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x =</span> Month, <span class="at">y =</span> Q_moy_mo_m3s, <span class="at">fill =</span> Month)) <span class="sc">+</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_boxplot</span>(<span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="fu">paste</span>(<span class="st">"Bassin :"</span>, df_name),</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>      <span class="at">x =</span> <span class="st">""</span>,</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> <span class="st">"Débit moyen mensuel (m3/s)"</span>,</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>      <span class="at">fill =</span> <span class="st">""</span></span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">+</span></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>()</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(plot)</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Projet_Modelisation_Hydrologique_HHGE_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="Projet_Modelisation_Hydrologique_HHGE_files/figure-html/unnamed-chunk-7-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="Projet_Modelisation_Hydrologique_HHGE_files/figure-html/unnamed-chunk-7-3.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="Projet_Modelisation_Hydrologique_HHGE_files/figure-html/unnamed-chunk-7-4.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="Projet_Modelisation_Hydrologique_HHGE_files/figure-html/unnamed-chunk-7-5.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="Projet_Modelisation_Hydrologique_HHGE_files/figure-html/unnamed-chunk-7-6.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="caractérisation-des-étiages-qmna5" class="level3">
+<h3 class="anchored" data-anchor-id="caractérisation-des-étiages-qmna5">Caractérisation des étiages (QMNA5)</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>df_QMNA5 <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">Bassin =</span> <span class="fu">character</span>(),</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">QMNA5 =</span> <span class="fu">numeric</span>()</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (BV <span class="cf">in</span> names_list_chroniques_debit) {</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  df <span class="ot">&lt;-</span> list_chroniques_debit[[BV]]</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  df_name <span class="ot">&lt;-</span> BV</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  df <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span> </span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">mutate</span>(</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">Year =</span> lubridate<span class="sc">::</span><span class="fu">year</span>(Date),</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">Month =</span> lubridate<span class="sc">::</span><span class="fu">month</span>(Date, <span class="at">label =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">group_by</span>(Year, Month) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">summarise</span>(</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>      <span class="at">Q_moy_mo_ls =</span> <span class="fu">mean</span>(Q_ls),</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">ungroup</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">group_by</span>(Year) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">summarise</span>(</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>      <span class="at">QMNA_ls =</span> <span class="fu">min</span>(Q_moy_mo_ls)</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">mutate</span>(</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">ln_QMNA_ls =</span> <span class="fu">log</span>(QMNA_ls)</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>  moyenne <span class="ot">&lt;-</span> <span class="fu">mean</span>(df<span class="sc">$</span>ln_QMNA_ls)</span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>  ecart_type <span class="ot">&lt;-</span> <span class="fu">sd</span>(df<span class="sc">$</span>ln_QMNA_ls)</span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="dv">5</span> </span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>  u <span class="ot">&lt;-</span> stats<span class="sc">::</span><span class="fu">qnorm</span>(<span class="at">p =</span> <span class="fl">0.2</span>, <span class="at">mean =</span> <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1</span>)</span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>  QMNA5 <span class="ot">&lt;-</span> <span class="fu">exp</span>(moyenne <span class="sc">+</span> u <span class="sc">*</span> ecart_type)</span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">paste0</span>(df_name, <span class="st">" - QMNA5 (l/s) : "</span>, <span class="fu">round</span>(QMNA5, <span class="dv">0</span>)))</span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a>  df_QMNA5 <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(df_QMNA5, </span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a>                               tibble<span class="sc">::</span><span class="fu">tibble</span>(<span class="at">Bassin =</span> df_name, </span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a>                                              <span class="at">QMNA5 =</span> <span class="fu">round</span>(QMNA5, <span class="dv">0</span>)))</span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "M01 - QMNA5 (l/s) : 146"
+[1] "M03 - QMNA5 (l/s) : 221"
+[1] "M04 - QMNA5 (l/s) : 367"
+[1] "M06 - QMNA5 (l/s) : 14"
+[1] "M08 - QMNA5 (l/s) : 77"
+[1] "M09 - QMNA5 (l/s) : 907"</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>ggplot2<span class="sc">::</span><span class="fu">ggplot</span>(<span class="at">data =</span> df_QMNA5, <span class="fu">aes</span>(<span class="at">x =</span> Bassin, <span class="at">y =</span> QMNA5, <span class="at">fill =</span> Bassin)) <span class="sc">+</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">geom_col</span>(<span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">labs</span>(</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">""</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"QMNA5 (l/s)"</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">theme_bw</span>() </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Projet_Modelisation_Hydrologique_HHGE_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="modélisation-hydrologique" class="level3">
+<h3 class="anchored" data-anchor-id="modélisation-hydrologique">Modélisation hydrologique</h3>
+<p>Période d’initialisation : 01/01/1995 - 31/12/1995<br>
+Période de calage : 01/01/1996 - 31/12/2007<br>
+Période de validation : 01/01/2008 - 31/12/2019<br>
+Période de simulation : 01/01/2020 - 31/12/2020</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluation du modèle (en calage et en validation)</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>BV <span class="ot">=</span> <span class="st">"M01"</span> <span class="co"># CodeMaille du BV simulé</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>SimPer <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"1996-01-01"</span>, <span class="st">"2020-12-31"</span>)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">left_join</span>(list_chroniques_meteo[[BV]],</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>                         list_chroniques_debit[[BV]],</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>                         <span class="fu">join_by</span>(Date)) <span class="sc">%&gt;%</span> </span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>        dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span>Q_ls) <span class="sc">%&gt;%</span> </span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>        dplyr<span class="sc">::</span><span class="fu">filter</span>(Date <span class="sc">&gt;=</span> lubridate<span class="sc">::</span><span class="fu">ymd</span>(<span class="st">"1995-01-01"</span>) <span class="sc">&amp;</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>                      Date <span class="sc">&lt;=</span> lubridate<span class="sc">::</span><span class="fu">ymd</span>(<span class="st">"2020-12-31"</span>))</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="co"># airGRteaching::ShinyGR(</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="co">#   ObsDF = data,</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="co">#   SimPer = SimPer</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="co"># )</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="débits-mensuels-pour-lannée-de-2020" class="level3">
+<h3 class="anchored" data-anchor-id="débits-mensuels-pour-lannée-de-2020">Débits mensuels pour l’année de 2020</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>list_results <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Division des périodes</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>WupPer <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"1995-01-01"</span>, <span class="st">"1995-12-31"</span>)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>CalPer <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"1996-01-01"</span>, <span class="st">"2007-12-31"</span>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>SimPer <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"2020-01-01"</span>, <span class="st">"2020-12-31"</span>)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Surface des BV M01 à M09 (km2)</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>Surf_BV <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="dv">364</span>, <span class="dv">60</span>, <span class="dv">872</span>, <span class="dv">366</span>, <span class="dv">93</span>, <span class="dv">132</span>, <span class="dv">192</span>, <span class="dv">595</span>, <span class="dv">2354</span>)</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(Surf_BV) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"M01"</span>, <span class="st">"M02"</span>, <span class="st">"M03"</span>, <span class="st">"M04"</span>, <span class="st">"M05"</span>, <span class="st">"M06"</span>, <span class="st">"M07"</span>, <span class="st">"M08"</span>, <span class="st">"M09"</span>)</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Preparation des données d'entrée</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (BV <span class="cf">in</span> names_list_chroniques_debit) {</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>  Surf_km2 <span class="ot">&lt;-</span> Surf_BV[[BV]]</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>  data <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">left_join</span>(list_chroniques_meteo[[BV]],</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>                         list_chroniques_debit[[BV]],</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>                         <span class="fu">join_by</span>(Date)) <span class="sc">%&gt;%</span> </span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>        dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span>Q_ls) <span class="sc">%&gt;%</span> </span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>        dplyr<span class="sc">::</span><span class="fu">filter</span>(Date <span class="sc">&gt;=</span> lubridate<span class="sc">::</span><span class="fu">ymd</span>(<span class="st">"1995-01-01"</span>) <span class="sc">&amp;</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>                      Date <span class="sc">&lt;=</span> lubridate<span class="sc">::</span><span class="fu">ymd</span>(<span class="st">"2020-12-31"</span>))</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>  PREP <span class="ot">&lt;-</span> airGRteaching<span class="sc">::</span><span class="fu">PrepGR</span>(</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">ObsDF =</span> data,</span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">HydroModel =</span> <span class="st">"GR4J"</span>,</span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">CemaNeige =</span> <span class="cn">FALSE</span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Calibration</span></span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>  CAL <span class="ot">&lt;-</span> airGRteaching<span class="sc">::</span><span class="fu">CalGR</span>(</span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">PrepGR =</span> PREP, </span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">CalCrit =</span> <span class="st">"NSE"</span>,</span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>  <span class="co">#transfo = "inv",</span></span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">WupPer =</span> WupPer,</span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">CalPer =</span> CalPer</span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Simulation</span></span>
+<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a>  SIM <span class="ot">&lt;-</span> airGRteaching<span class="sc">::</span><span class="fu">SimGR</span>(</span>
+<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">PrepGR =</span> PREP, </span>
+<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a>  <span class="at">Param =</span> CAL, </span>
+<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a>  <span class="at">EffCrit =</span> <span class="st">"NSE"</span>,</span>
+<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">WupPer =</span> WupPer,</span>
+<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a>    <span class="at">SimPer =</span> SimPer</span>
+<span id="cb14-45"><a href="#cb14-45" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb14-46"><a href="#cb14-46" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-47"><a href="#cb14-47" aria-hidden="true" tabindex="-1"></a>  df_Qsim <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
+<span id="cb14-48"><a href="#cb14-48" aria-hidden="true" tabindex="-1"></a>    <span class="at">Date =</span> <span class="fu">seq</span>(lubridate<span class="sc">::</span><span class="fu">ymd</span>(<span class="st">"2020-01-01"</span>), </span>
+<span id="cb14-49"><a href="#cb14-49" aria-hidden="true" tabindex="-1"></a>               lubridate<span class="sc">::</span><span class="fu">ymd</span>(<span class="st">"2020-12-31"</span>), </span>
+<span id="cb14-50"><a href="#cb14-50" aria-hidden="true" tabindex="-1"></a>               <span class="at">by =</span> <span class="st">"day"</span>),</span>
+<span id="cb14-51"><a href="#cb14-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">Qsim_mmj =</span> SIM<span class="sc">$</span>OutputsModel<span class="sc">$</span>Qsim</span>
+<span id="cb14-52"><a href="#cb14-52" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb14-53"><a href="#cb14-53" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-54"><a href="#cb14-54" aria-hidden="true" tabindex="-1"></a>  list_results[[BV]] <span class="ot">&lt;-</span> df_Qsim</span>
+<span id="cb14-55"><a href="#cb14-55" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-56"><a href="#cb14-56" aria-hidden="true" tabindex="-1"></a>  df_Qsim <span class="ot">&lt;-</span> df_Qsim <span class="sc">%&gt;%</span> </span>
+<span id="cb14-57"><a href="#cb14-57" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">mutate</span>(</span>
+<span id="cb14-58"><a href="#cb14-58" aria-hidden="true" tabindex="-1"></a>      <span class="at">Qsim_m3s =</span> Qsim_mmj <span class="sc">*</span> Surf_km2 <span class="sc">*</span> <span class="fl">1e3</span> <span class="sc">/</span> (<span class="dv">3600</span> <span class="sc">*</span> <span class="dv">24</span>),</span>
+<span id="cb14-59"><a href="#cb14-59" aria-hidden="true" tabindex="-1"></a>      <span class="at">Year =</span> lubridate<span class="sc">::</span><span class="fu">year</span>(Date),</span>
+<span id="cb14-60"><a href="#cb14-60" aria-hidden="true" tabindex="-1"></a>      <span class="at">Month =</span> lubridate<span class="sc">::</span><span class="fu">month</span>(Date, <span class="at">label =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb14-61"><a href="#cb14-61" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">%&gt;%</span> </span>
+<span id="cb14-62"><a href="#cb14-62" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">group_by</span>(Year, Month) <span class="sc">%&gt;%</span> </span>
+<span id="cb14-63"><a href="#cb14-63" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">summarise</span>(</span>
+<span id="cb14-64"><a href="#cb14-64" aria-hidden="true" tabindex="-1"></a>      <span class="at">Q_moy_mo_m3s =</span> <span class="fu">mean</span>(Qsim_m3s),</span>
+<span id="cb14-65"><a href="#cb14-65" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">%&gt;%</span> </span>
+<span id="cb14-66"><a href="#cb14-66" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">ungroup</span>()</span>
+<span id="cb14-67"><a href="#cb14-67" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-68"><a href="#cb14-68" aria-hidden="true" tabindex="-1"></a>  plot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df_Qsim, <span class="fu">aes</span>(<span class="at">x =</span> Month, <span class="at">y =</span> Q_moy_mo_m3s, <span class="at">fill =</span> Month)) <span class="sc">+</span></span>
+<span id="cb14-69"><a href="#cb14-69" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_col</span>(<span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb14-70"><a href="#cb14-70" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(</span>
+<span id="cb14-71"><a href="#cb14-71" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="fu">paste</span>(<span class="st">"Bassin :"</span>, BV),</span>
+<span id="cb14-72"><a href="#cb14-72" aria-hidden="true" tabindex="-1"></a>      <span class="at">x =</span> <span class="st">""</span>,</span>
+<span id="cb14-73"><a href="#cb14-73" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> <span class="st">"Débit moyen mensuel (m3/s)"</span>,</span>
+<span id="cb14-74"><a href="#cb14-74" aria-hidden="true" tabindex="-1"></a>      <span class="at">fill =</span> <span class="st">""</span></span>
+<span id="cb14-75"><a href="#cb14-75" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">+</span></span>
+<span id="cb14-76"><a href="#cb14-76" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>()</span>
+<span id="cb14-77"><a href="#cb14-77" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-78"><a href="#cb14-78" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(plot)</span>
+<span id="cb14-79"><a href="#cb14-79" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-80"><a href="#cb14-80" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Projet_Modelisation_Hydrologique_HHGE_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="Projet_Modelisation_Hydrologique_HHGE_files/figure-html/unnamed-chunk-11-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="Projet_Modelisation_Hydrologique_HHGE_files/figure-html/unnamed-chunk-11-3.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="Projet_Modelisation_Hydrologique_HHGE_files/figure-html/unnamed-chunk-11-4.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="Projet_Modelisation_Hydrologique_HHGE_files/figure-html/unnamed-chunk-11-5.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="Projet_Modelisation_Hydrologique_HHGE_files/figure-html/unnamed-chunk-11-6.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="caractérisation-des-étiages-des-cours-deau-des-bassins-non-jaugés" class="level3">
+<h3 class="anchored" data-anchor-id="caractérisation-des-étiages-des-cours-deau-des-bassins-non-jaugés">Caractérisation des étiages des cours d’eau des bassins non jaugés</h3>
+<p>Méthode de régionalisation de transfert des paramètres de modélisation hydrologique</p>
+<p>En fonction des distances hydrologiques :</p>
+<p>param(M02) = param(M03)<br>
+param(M05) = param(M04)<br>
+param(M07) = param(M08)</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
